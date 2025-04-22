@@ -97,8 +97,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  // Clignotement LED1
 	  HAL_GPIO_TogglePin(GPIOI, GPIO_PIN_1); // Pour LED1
-	 	    // HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_7); // Pour LED2 si tu préfères
+
 
 	  HAL_Delay(500); // Délai de 500ms
   }
