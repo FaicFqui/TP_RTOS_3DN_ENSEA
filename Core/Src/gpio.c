@@ -63,6 +63,7 @@
      PG12   ------> LTDC_B4
      PG10   ------> SAI2_SD_B
      PJ14   ------> LTDC_B2
+     PD5   ------> USART2_TX
      PD3   ------> DCMI_D5
      PD1   ------> FMC_D3_DA3
      PA11   ------> USB_OTG_FS_DM
@@ -75,12 +76,10 @@
      PG9   ------> DCMI_VSYNC
      PJ15   ------> LTDC_B3
      PD2   ------> SDMMC1_CMD
-     PA10   ------> USB_OTG_FS_ID
      PF1   ------> FMC_A1
      PI9   ------> LTDC_VSYNC
      PH14   ------> DCMI_D4
      PI0   ------> S_TIM5_CH4
-     PA9   ------> USART1_TX
      PK1   ------> LTDC_G6
      PK2   ------> LTDC_G7
      PC9   ------> SDMMC1_D1
@@ -144,8 +143,6 @@
      PH7   ------> I2C3_SCL
      PH9   ------> DCMI_D0
      PH11   ------> DCMI_D2
-     PA2   ------> USART2_TX
-     PA6   ------> DCMI_PIXCLK
      PA5   ------> USB_OTG_HS_ULPI_CK
      PC5   ------> ETH_RXD1
      PF14   ------> FMC_A8
@@ -158,7 +155,6 @@
      PH6   ------> S_TIM12_CH1
      PH8   ------> I2C3_SDA
      PH10   ------> DCMI_D1
-     PA3   ------> USART2_RX
      PA7   ------> ETH_CRS_DV
      PB1   ------> USB_OTG_HS_ULPI_D2
      PB0   ------> USB_OTG_HS_ULPI_D1
@@ -190,12 +186,6 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOK_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOI, ARDUINO_D7_Pin|ARDUINO_D8_Pin|GPIO_PIN_1|LCD_DISP_Pin, GPIO_PIN_RESET);
@@ -311,13 +301,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF13_DCMI;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
   /*Configure GPIO pin : QSPI_NCS_Pin */
   GPIO_InitStruct.Pin = QSPI_NCS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -350,18 +333,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF14_LTDC;
   HAL_GPIO_Init(GPIOJ, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : OTG_FS_VBUS_Pin */
-  GPIO_InitStruct.Pin = OTG_FS_VBUS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(OTG_FS_VBUS_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : Audio_INT_Pin */
-  GPIO_InitStruct.Pin = Audio_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(Audio_INT_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pins : FMC_D2_Pin FMC_D3_Pin FMC_D1_Pin FMC_D15_Pin
                            FMC_D0_Pin FMC_D14_Pin FMC_D13_Pin */
   GPIO_InitStruct.Pin = FMC_D2_Pin|FMC_D3_Pin|FMC_D1_Pin|FMC_D15_Pin
@@ -372,8 +343,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF12_FMC;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : OTG_FS_P_Pin OTG_FS_N_Pin OTG_FS_ID_Pin */
-  GPIO_InitStruct.Pin = OTG_FS_P_Pin|OTG_FS_N_Pin|OTG_FS_ID_Pin;
+  /*Configure GPIO pins : OTG_FS_P_Pin OTG_FS_N_Pin */
+  GPIO_InitStruct.Pin = OTG_FS_P_Pin|OTG_FS_N_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
@@ -414,12 +385,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF10_SAI2;
   HAL_GPIO_Init(SAI2_SDB_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : OTG_FS_PowerSwitchOn_Pin */
-  GPIO_InitStruct.Pin = OTG_FS_PowerSwitchOn_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pin : PD5 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : DCMI_D5_Pin */
   GPIO_InitStruct.Pin = DCMI_D5_Pin;
@@ -521,14 +493,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
   HAL_GPIO_Init(ARDUINO_PWM_CS_D5_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : VCP_TX_Pin */
-  GPIO_InitStruct.Pin = VCP_TX_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-  HAL_GPIO_Init(VCP_TX_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : ARDUINO_PWM_D10_Pin */
   GPIO_InitStruct.Pin = ARDUINO_PWM_D10_Pin;
@@ -643,13 +607,13 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ARDUINO_A0_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : DCMI_HSYNC_Pin PA6 */
-  GPIO_InitStruct.Pin = DCMI_HSYNC_Pin|GPIO_PIN_6;
+  /*Configure GPIO pin : DCMI_HSYNC_Pin */
+  GPIO_InitStruct.Pin = DCMI_HSYNC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF13_DCMI;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(DCMI_HSYNC_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LCD_SCL_Pin LCD_SDA_Pin */
   GPIO_InitStruct.Pin = LCD_SCL_Pin|LCD_SDA_Pin;
@@ -658,14 +622,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA2 PA3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : ULPI_CLK_Pin */
   GPIO_InitStruct.Pin = ULPI_CLK_Pin;

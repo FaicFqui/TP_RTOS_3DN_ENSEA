@@ -19,7 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "usart.h"
 #include "gpio.h"
+#include "semphr.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -57,7 +60,12 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void LedCli(void *argument);
+int __io_putchar(int ch) {
+	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+return ch;
+}
+
+/*void LedCli(void *argument);
 
 void LedCli(void *argument)
       {
@@ -66,7 +74,49 @@ void LedCli(void *argument)
           HAL_GPIO_TogglePin(GPIOI, GPIO_PIN_1); // Inverse l'état de la LED
           vTaskDelay(pdMS_TO_TICKS(500));        // Attendre 500ms :: vTaskDelay(500 / portTICK_PERIOD_MS);
         }
-      }
+      }*/
+
+
+SemaphoreHandle_t sem;
+
+void TaskGive(void *argument);
+void TaskTake(void *argument);
+
+void TaskGive(void *argument){
+	for(;;)
+	    {
+	        // Affichage avant de donner le sémaphore
+	        printf("TaskGive: Avant de donner le sémaphore\n");
+
+
+	        // Donner le sémaphore (si possible)
+	        if (xSemaphoreGive(sem) == pdPASS)
+	        {
+	            printf("TaskGive: Sémaphore donné\n");
+	        }
+
+	        // Affichage après avoir donné le sémaphore
+	        vTaskDelay(pdMS_TO_TICKS(100)); // Attendre 100 ms
+	    }
+}
+
+void TaskTake(void *argument){
+
+	for(;;)
+	    {
+	        // Affichage avant de prendre le sémaphore
+	        printf("TaskTake: Avant de prendre le sémaphore\n");
+
+	        // Attendre que le sémaphore soit disponible
+	        if (xSemaphoreTake(sem, portMAX_DELAY) == pdTRUE)
+	        {
+	            printf("TaskTake: Sémaphore pris\n");
+	        }
+
+	        // Affichage après avoir pris le sémaphore
+	    }
+
+}
 
 /* USER CODE END 0 */
 
@@ -99,11 +149,23 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  printf("Test UART transmission\n");
 
 
+  	  sem = xSemaphoreCreateBinary();
+      // Vérifier si le sémaphore a été créé avec succès
+      if (sem == NULL)
+      {
+          printf("Erreur de création du sémaphore\n");
+          while(1);
+      }
   /* Création de la tâche */
-    xTaskCreate(LedCli, "LedTask", 128, NULL, 1, NULL);
+    //xTaskCreate(LedCli, "LedTask", 128, NULL, 1, NULL);
+  xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);
+  xTaskCreate(TaskTake, "TaskTake", 127, NULL, 1, NULL);
+
 
     /* Lancement du scheduler */
     vTaskStartScheduler();
@@ -113,7 +175,14 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
 
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
