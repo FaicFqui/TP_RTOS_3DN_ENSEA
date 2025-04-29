@@ -83,40 +83,52 @@ void TaskGive(void *argument);
 void TaskTake(void *argument);
 
 void TaskGive(void *argument){
-	for(;;)
-	    {
-	        // Affichage avant de donner le sémaphore
-	        printf("TaskGive: Avant de donner le sémaphore\n");
+    TickType_t delay = 100; // Délai initial en ms
 
+    for(;;)
+    {
+        printf("TaskGive: Avant de donner le sémaphore\n");
 
-	        // Donner le sémaphore (si possible)
-	        if (xSemaphoreGive(sem) == pdPASS)
-	        {
-	            printf("TaskGive: Sémaphore donné\n");
-	        }
+        if (xSemaphoreGive(sem) == pdPASS)
+        {
+            printf("TaskGive: Sémaphore donné\n");
+        }
 
-	        // Affichage après avoir donné le sémaphore
-	        vTaskDelay(pdMS_TO_TICKS(100)); // Attendre 100 ms
-	    }
+        vTaskDelay(pdMS_TO_TICKS(delay)); // Attendre delay ms
+        delay += 100; // Ajoute 100ms à chaque itération
+    }
 }
+
+
 
 void TaskTake(void *argument){
+    static int erreur_count = 0;
 
-	for(;;)
-	    {
-	        // Affichage avant de prendre le sémaphore
-	        printf("TaskTake: Avant de prendre le sémaphore\n");
+    for(;;)
+    {
+        printf("TaskTake: Avant de prendre le sémaphore\n");
 
-	        // Attendre que le sémaphore soit disponible
-	        if (xSemaphoreTake(sem, portMAX_DELAY) == pdTRUE)
-	        {
-	            printf("TaskTake: Sémaphore pris\n");
-	        }
+        if (xSemaphoreTake(sem, pdMS_TO_TICKS(1000)) == pdTRUE)
+        {
+            printf("TaskTake: Sémaphore pris\n");
+            erreur_count = 0; // Reset du compteur d'erreur
+        }
+        else
+        {
+            erreur_count++;
+            printf("TaskTake: Erreur d'acquisition #%d\n", erreur_count);
 
-	        // Affichage après avoir pris le sémaphore
-	    }
-
+            if (erreur_count >= 3)
+            {
+                printf("TaskTake: Trop d'échecs. Redémarrage dans 5s...\n");
+                vTaskDelay(pdMS_TO_TICKS(5000));
+                NVIC_SystemReset(); // Redémarrage logiciel
+            }
+        }
+    }
 }
+
+
 
 /* USER CODE END 0 */
 
@@ -164,7 +176,7 @@ int main(void)
   /* Création de la tâche */
     //xTaskCreate(LedCli, "LedTask", 128, NULL, 1, NULL);
   xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);
-  xTaskCreate(TaskTake, "TaskTake", 127, NULL, 1, NULL);
+  xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, NULL);
 
 
     /* Lancement du scheduler */

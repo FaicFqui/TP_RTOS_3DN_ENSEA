@@ -1,7 +1,8 @@
+../Drivers/CMSIS/Include/core_cm7.h:2147:34:__NVIC_SystemReset	1
 ../Core/Src/main.c:63:5:__io_putchar	1
 ../Core/Src/main.c:85:6:TaskGive	2
-../Core/Src/main.c:103:6:TaskTake	2
-../Core/Src/main.c:127:5:main	2
-../Core/Src/main.c:209:6:SystemClock_Config	4
-../Core/Src/main.c:269:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:286:6:Error_Handler	1
+../Core/Src/main.c:104:6:TaskTake	2
+../Core/Src/main.c:139:5:main	2
+../Core/Src/main.c:221:6:SystemClock_Config	4
+../Core/Src/main.c:281:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:298:6:Error_Handler	1
