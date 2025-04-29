@@ -128,7 +128,9 @@ void TaskTake(void *argument){
     }
 }*/
 
-TaskHandle_t taskTakeHandle;
+
+// Taches avec Notification
+/*TaskHandle_t taskTakeHandle;
 
 void TaskGive(void *argument){
     TickType_t delay = 100; // Délai initial en ms
@@ -172,6 +174,33 @@ void TaskTake(void *argument){
                 NVIC_SystemReset();
             }
         }
+    }
+}*/
+
+
+SemaphoreHandle_t delay_mutex;
+
+#define STACK_SIZE 256
+#define TASK1_PRIORITY 1
+#define TASK2_PRIORITY 2
+#define TASK1_DELAY 1
+#define TASK2_DELAY 2
+
+void task_bug(void * pvParameters)
+{
+    int delay;
+
+    for (;;)
+    {
+        // Prendre le mutex pour lire la valeur de delay de manière sécurisée
+        if (xSemaphoreTake(delay_mutex, portMAX_DELAY) == pdTRUE)
+        {
+        	delay = (int) pvParameters;
+            xSemaphoreGive(delay_mutex);
+        }
+
+        printf("Je suis %s et je m'endors pour %d ticks\r\n", pcTaskGetName(NULL), delay);
+        vTaskDelay(delay);
     }
 }
 
@@ -231,8 +260,18 @@ int main(void)
   xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, NULL);*/
 
    // Taches avec Notification
-  xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, &taskTakeHandle);
-  xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);
+  /*xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, &taskTakeHandle);
+  xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);*/
+
+  BaseType_t ret;
+  delay_mutex = xSemaphoreCreateMutex();
+  configASSERT(delay_mutex != NULL);
+
+  ret = xTaskCreate(task_bug, "Tache 1", STACK_SIZE, (void *) TASK1_DELAY, TASK1_PRIORITY, NULL);
+  configASSERT(pdPASS == ret);
+  ret = xTaskCreate(task_bug, "Tache 2", STACK_SIZE, (void *) TASK2_DELAY, TASK2_PRIORITY, NULL);
+  configASSERT(pdPASS == ret);
+
 
     /* Lancement du scheduler */
     vTaskStartScheduler();
