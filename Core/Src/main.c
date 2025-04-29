@@ -76,8 +76,8 @@ void LedCli(void *argument)
         }
       }*/
 
-
-SemaphoreHandle_t sem;
+// Taches utilisant un sémaphore binaire
+/*SemaphoreHandle_t sem;
 
 void TaskGive(void *argument);
 void TaskTake(void *argument);
@@ -126,6 +126,53 @@ void TaskTake(void *argument){
             }
         }
     }
+}*/
+
+TaskHandle_t taskTakeHandle;
+
+void TaskGive(void *argument){
+    TickType_t delay = 100; // Délai initial en ms
+
+    for(;;)
+    {
+        printf("TaskGive: Avant de notifier la tâche\n");
+
+        // Envoie une notification à TaskTake
+        xTaskNotifyGive(taskTakeHandle);
+
+        printf("TaskGive: Notification envoyée\n");
+
+        vTaskDelay(pdMS_TO_TICKS(delay));
+        delay += 100;
+    }
+}
+
+void TaskTake(void *argument){
+    static int erreur_count = 0;
+
+    for(;;)
+    {
+        printf("TaskTake: Avant de recevoir la notification\n");
+
+        // Attend la notification (pendant 1 seconde max)
+        if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000)) > 0)
+        {
+            printf("TaskTake: Notification reçue\n");
+            erreur_count = 0;
+        }
+        else
+        {
+            erreur_count++;
+            printf("TaskTake: Timeout #%d - pas de notification reçue\n", erreur_count);
+
+            if (erreur_count >= 3)
+            {
+                printf("TaskTake: Trop d'échecs. Redémarrage dans 5s...\n");
+                vTaskDelay(pdMS_TO_TICKS(5000));
+                NVIC_SystemReset();
+            }
+        }
+    }
 }
 
 
@@ -165,19 +212,27 @@ int main(void)
   /* USER CODE BEGIN 2 */
   printf("Test UART transmission\n");
 
+  // Pour les tâches avec le sémaphore
 
-  	  sem = xSemaphoreCreateBinary();
+  /*	  sem = xSemaphoreCreateBinary();
       // Vérifier si le sémaphore a été créé avec succès
       if (sem == NULL)
       {
           printf("Erreur de création du sémaphore\n");
           while(1);
-      }
+      }*/
+
   /* Création de la tâche */
     //xTaskCreate(LedCli, "LedTask", 128, NULL, 1, NULL);
-  xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);
-  xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, NULL);
 
+  // Pour les tâches avec le sémaphore
+  /*
+  xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);
+  xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, NULL);*/
+
+   // Taches avec Notification
+  xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, &taskTakeHandle);
+  xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);
 
     /* Lancement du scheduler */
     vTaskStartScheduler();
