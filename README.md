@@ -28,7 +28,7 @@ HAL_NVIC_EnableIRQ(USART1_IRQn);
 
 Dans FreeRTOSConfig.h : #define configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY 5
 
-Création de paire drv_uart.c et .h dans lesquel on délègue une partie du travail qui était fait dasn shell.c. : 
+Création de paire drv_uart.c et .h dans lesquelles on délègue une partie du travail qui était fait dasn shell.c. : 
 Transmission uart - réception uart en interruption
 
 Intégration de la fonction shell_run() dans une tache RTOS crée dans le main :
