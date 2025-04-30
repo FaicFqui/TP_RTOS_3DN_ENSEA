@@ -21,12 +21,13 @@
 #include "cmsis_os.h"
 #include "usart.h"
 #include "gpio.h"
-#include "semphr.h"
-#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "semphr.h"
+#include <stdio.h>
+#include "shell.h"
+#include "drv_uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -177,8 +178,8 @@ void TaskTake(void *argument){
     }
 }*/
 
-
-SemaphoreHandle_t delay_mutex;
+//Tache avec mutex
+/*SemaphoreHandle_t delay_mutex;
 
 #define STACK_SIZE 256
 #define TASK1_PRIORITY 1
@@ -203,8 +204,26 @@ void task_bug(void * pvParameters)
         vTaskDelay(delay);
     }
 }
+*/
 
 
+
+
+
+int fonction(int argc, char **argv) {
+	printf("Une fonction inutile\r\n");
+	return 0;
+}
+
+void ShellTask(void *argument) {
+	drv_uart_set_task_handle(xTaskGetCurrentTaskHandle());
+	HAL_UART_Receive_IT(&huart1, (uint8_t *)&uart_rx_char, 1);
+
+	shell_init();
+	shell_add('f', fonction, "Une fonction inutile");
+
+	shell_run();  // Boucle bloquante
+}
 
 /* USER CODE END 0 */
 
@@ -239,7 +258,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  printf("Test UART transmission\n");
+  //printf("Test UART transmission\n");
 
   // Pour les tâches avec le sémaphore
 
@@ -263,32 +282,29 @@ int main(void)
   /*xTaskCreate(TaskTake, "TaskTake", 128, NULL, 2, &taskTakeHandle);
   xTaskCreate(TaskGive, "TaskGive", 128, NULL, 1, NULL);*/
 
-  BaseType_t ret;
+  //Tache avec Mutex
+  /*BaseType_t ret;
   delay_mutex = xSemaphoreCreateMutex();
   configASSERT(delay_mutex != NULL);
 
   ret = xTaskCreate(task_bug, "Tache 1", STACK_SIZE, (void *) TASK1_DELAY, TASK1_PRIORITY, NULL);
   configASSERT(pdPASS == ret);
   ret = xTaskCreate(task_bug, "Tache 2", STACK_SIZE, (void *) TASK2_DELAY, TASK2_PRIORITY, NULL);
-  configASSERT(pdPASS == ret);
+  configASSERT(pdPASS == ret);*/
 
 
-    /* Lancement du scheduler */
-    vTaskStartScheduler();
+
+  xTaskCreate(ShellTask, "Shell", 512, NULL, tskIDLE_PRIORITY + 1, NULL);
+
+  	  /* Lancement du scheduler */
+  	  vTaskStartScheduler();
 
 
 
 
   /* USER CODE END 2 */
 
-  /* Init scheduler */
-  osKernelInitialize();
 
-  /* Call init function for freertos objects (in cmsis_os2.c) */
-  MX_FREERTOS_Init();
-
-  /* Start scheduler */
-  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 

@@ -1,0 +1,7 @@
+../shell/shell.c:168:13:uart_read	16	static
+../shell/shell.c:174:12:uart_write	16	static
+../shell/shell.c:178:12:sh_help	32	static
+../shell/shell.c:187:6:shell_init	16	static
+../shell/shell.c:194:5:shell_add	24	static
+../shell/shell.c:205:12:shell_exec	72	static
+../shell/shell.c:229:5:shell_run	16	static
