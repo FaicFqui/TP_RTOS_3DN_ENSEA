@@ -1,260 +1,118 @@
 /*
  * shell.c
- *
- *  Created on: 7 juin 2019
- *      Author: Laurent Fiack
  */
 
-/*#include "shell.h"
-
-#include <stdio.h>
-
-#include "usart.h"
-#include "gpio.h"
-
-typedef struct{
-	char c;
-	int (* func)(int argc, char ** argv);
-	char * description;
-} shell_func_t;
-
-static int shell_func_list_size = 0;
-static shell_func_t shell_func_list[SHELL_FUNC_LIST_MAX_SIZE];
-
-static char print_buffer[BUFFER_SIZE];
-
-static char uart_read() {
-	char c;
-
-	HAL_UART_Receive(&UART_DEVICE, (uint8_t*)(&c), 1, HAL_MAX_DELAY);
-
-	return c;
-}
-
-static int uart_write(char * s, uint16_t size) {
-	HAL_UART_Transmit(&UART_DEVICE, (uint8_t*)s, size, HAL_MAX_DELAY);
-	return size;
-}
-
-static int sh_help(int argc, char ** argv) {
-	int i;
-	for(i = 0 ; i < shell_func_list_size ; i++) {
-		int size;
-		size = snprintf (print_buffer, BUFFER_SIZE, "%c: %s\r\n", shell_func_list[i].c, shell_func_list[i].description);
-		uart_write(print_buffer, size);
-	}
-
-	return 0;
-}
-
-void shell_init() {
-	int size = 0;
-
-	size = snprintf (print_buffer, BUFFER_SIZE, "\r\n\r\n===== Monsieur Shell v0.2 =====\r\n");
-	uart_write(print_buffer, size);
-
-	shell_add('h', sh_help, "Help");
-}
-
-int shell_add(char c, int (* pfunc)(int argc, char ** argv), char * description) {
-	if (shell_func_list_size < SHELL_FUNC_LIST_MAX_SIZE) {
-		shell_func_list[shell_func_list_size].c = c;
-		shell_func_list[shell_func_list_size].func = pfunc;
-		shell_func_list[shell_func_list_size].description = description;
-		shell_func_list_size++;
-		return 0;
-	}
-
-	return -1;
-}
-
-static int shell_exec(char * buf) {
-	int i;
-
-	char c = buf[0];
-
-	int argc;
-	char * argv[ARGC_MAX];
-	char *p;
-
-	for(i = 0 ; i < shell_func_list_size ; i++) {
-		if (shell_func_list[i].c == c) {
-			argc = 1;
-			argv[0] = buf;
-
-			for(p = buf ; *p != '\0' && argc < ARGC_MAX ; p++){
-				if(*p == ' ') {
-					*p = '\0';
-					argv[argc++] = p+1;
-				}
-			}
-
-			return shell_func_list[i].func(argc, argv);
-		}
-	}
-
-	int size;
-	size = snprintf (print_buffer, BUFFER_SIZE, "%c: no such command\r\n", c);
-	uart_write(print_buffer, size);
-	return -1;
-}
-
-static char backspace[] = "\b \b";
-static char prompt[] = "> ";
-
-int shell_run() {
-	int reading = 0;
-	int pos = 0;
-
-	static char cmd_buffer[BUFFER_SIZE];
-
-	while (1) {
-		uart_write(prompt, 2);
-		reading = 1;
-
-		while(reading) {
-			char c = uart_read();
-			int size;
-
-			switch (c) {
-			//process RETURN key
-			case '\r':
-				//case '\n':
-				size = snprintf (print_buffer, BUFFER_SIZE, "\r\n");
-				uart_write(print_buffer, size);
-				cmd_buffer[pos++] = 0;     //add \0 char at end of string
-				size = snprintf (print_buffer, BUFFER_SIZE, ":%s\r\n", cmd_buffer);
-				uart_write(print_buffer, size);
-				reading = 0;        //exit read loop
-				pos = 0;            //reset buffer
-				break;
-				//backspace
-			case '\b':
-				if (pos > 0) {      //is there a char to delete?
-					pos--;          //remove it in buffer
-
-					uart_write(backspace, 3);	// delete the char on the terminal
-				}
-				break;
-				//other characters
-			default:
-				//only store characters if buffer has space
-				if (pos < BUFFER_SIZE) {
-					uart_write(&c, 1);
-					cmd_buffer[pos++] = c; //store
-				}
-			}
-		}
-		shell_exec(cmd_buffer);
-	}
-	return 0;
-}
-
-*/
-
 #include "shell.h"
-#include "drv_uart.h"
 #include <stdio.h>
 #include <string.h>
+#include "drv_uart.h"
 
-static shell_func_t shell_func_list[SHELL_FUNC_LIST_MAX_SIZE];
-static int shell_func_list_size = 0;
-static char print_buffer[BUFFER_SIZE];
-static char cmd_buffer[BUFFER_SIZE];
+static h_shell_t *shell_global = NULL;  // Pointeur global accessible dans sh_help
 
-static char prompt[] = "> ";
 static char backspace[] = "\b \b";
+static char prompt[] = "> ";
 
-static char uart_read(void) {
-	char c;
-	drv_uart_receive(&c, 1);  // Attend un caractère via UART (IT + FreeRTOS)
-	return c;
+
+int sh_help(int argc, char **argv) {
+    for (int i = 0; i < shell_global->shell_func_list_size; i++) {
+        int size = snprintf(shell_global->print_buffer, BUFFER_SIZE, "%c: %s\r\n",
+                            shell_global->shell_func_list[i].c,
+                            shell_global->shell_func_list[i].description);
+        shell_global->io.drv_shell_transmit(shell_global->print_buffer, size);
+    }
+    return 0;
 }
 
-static int uart_write(char *s, uint16_t size) {
-	return drv_uart_transmit(s, size);
+void shell_init(h_shell_t *shell) {
+    shell_global = shell;  // Initialise le pointeur global
+
+    shell->shell_func_list_size = 0;
+
+    int size = snprintf(shell->print_buffer, BUFFER_SIZE,
+                        "\r\n\r\n===== Monsieur Shell v0.2 =====\r\n");
+    shell->io.drv_shell_transmit(shell->print_buffer, size);
+
+    shell_add(shell, 'h', sh_help, "Help");
 }
 
-static int sh_help(int argc, char **argv) {
-	for (int i = 0; i < shell_func_list_size; i++) {
-		int size = snprintf(print_buffer, BUFFER_SIZE, "%c: %s\r\n",
-		                    shell_func_list[i].c, shell_func_list[i].description);
-		uart_write(print_buffer, size);
-	}
-	return 0;
+int shell_add(h_shell_t *shell, char c,
+              int (*pfunc)(int, char **),
+              char *description) {
+    if (shell->shell_func_list_size < SHELL_FUNC_LIST_MAX_SIZE) {
+        shell->shell_func_list[shell->shell_func_list_size].c = c;
+        shell->shell_func_list[shell->shell_func_list_size].func = pfunc;
+        shell->shell_func_list[shell->shell_func_list_size].description = description;
+        shell->shell_func_list_size++;
+        return 0;
+    }
+    return -1;
 }
 
-void shell_init(void) {
-	shell_func_list_size = 0;
-	int size = snprintf(print_buffer, BUFFER_SIZE, "\r\n===== FreeRTOS Shell v1.0 =====\r\n");
-	uart_write(print_buffer, size);
-	shell_add('h', sh_help, "Help");
+static int shell_exec(h_shell_t *shell, char *buf) {
+    char c = buf[0];
+    int argc = 1;
+    char *argv[ARGC_MAX];
+    argv[0] = buf;
+
+    for (char *p = buf; *p != '\0' && argc < ARGC_MAX; p++) {
+        if (*p == ' ') {
+            *p = '\0';
+            argv[argc++] = p + 1;
+        }
+    }
+
+    for (int i = 0; i < shell->shell_func_list_size; i++) {
+        if (shell->shell_func_list[i].c == c) {
+            return shell->shell_func_list[i].func(argc, argv);
+        }
+    }
+
+    int size = snprintf(shell->print_buffer, BUFFER_SIZE,
+                        "%c: no such command\r\n", c);
+    shell->io.drv_shell_transmit(shell->print_buffer, size);
+    return -1;
 }
 
-int shell_add(char c, int (*func)(int, char **), char *description) {
-	if (shell_func_list_size < SHELL_FUNC_LIST_MAX_SIZE) {
-		shell_func_list[shell_func_list_size].c = c;
-		shell_func_list[shell_func_list_size].func = func;
-		shell_func_list[shell_func_list_size].description = description;
-		shell_func_list_size++;
-		return 0;
-	}
-	return -1;
-}
+int shell_run(h_shell_t *shell) {
+    int reading = 0;
+    int pos = 0;
 
-static int shell_exec(char *buf) {
-	char c = buf[0];
-	char *argv[ARGC_MAX];
-	int argc = 1;
-	argv[0] = buf;
+    while (1) {
+        shell->io.drv_shell_transmit(prompt, 2);
+        reading = 1;
 
-	for (char *p = buf; *p != '\0' && argc < ARGC_MAX; p++) {
-		if (*p == ' ') {
-			*p = '\0';
-			argv[argc++] = p + 1;
-		}
-	}
+        while (reading) {
+            char c;
+            if (shell->io.drv_shell_receive(&c, 1) != 0)
+                continue;
 
-	for (int i = 0; i < shell_func_list_size; i++) {
-		if (shell_func_list[i].c == c) {
-			return shell_func_list[i].func(argc, argv);
-		}
-	}
+            int size;
+            switch (c) {
+            case '\r':
+                size = snprintf(shell->print_buffer, BUFFER_SIZE, "\r\n");
+                shell->io.drv_shell_transmit(shell->print_buffer, size);
+                shell->cmd_buffer[pos++] = 0;
+                shell_exec(shell, shell->cmd_buffer);
+                reading = 0;
+                pos = 0;
+                break;
 
-	int size = snprintf(print_buffer, BUFFER_SIZE, "%c: no such command\r\n", c);
-	uart_write(print_buffer, size);
-	return -1;
-}
+            case '\b':
+                if (pos > 0) {
+                    pos--;
+                    shell->io.drv_shell_transmit(backspace, 3);
+                }
+                break;
 
-int shell_run(void) {
-	int pos = 0;
-	uart_write(prompt, strlen(prompt));
+            default:
+                if (pos < BUFFER_SIZE - 1) {
+                    shell->io.drv_shell_transmit(&c, 1);
+                    shell->cmd_buffer[pos++] = c;
+                }
+                break;
+            }
+        }
+    }
 
-	while (1) {
-		char c = uart_read();
-
-		switch (c) {
-		case '\r':  // Entrée
-			cmd_buffer[pos] = '\0';
-			uart_write("\r\n", 2);
-			shell_exec(cmd_buffer);
-			pos = 0;
-			uart_write(prompt, strlen(prompt));
-			break;
-
-		case '\b':
-			if (pos > 0) {
-				pos--;
-				uart_write(backspace, 3);
-			}
-			break;
-
-		default:
-			if (pos < BUFFER_SIZE - 1) {
-				cmd_buffer[pos++] = c;
-				uart_write(&c, 1);
-			}
-			break;
-		}
-	}
+    return 0;
 }

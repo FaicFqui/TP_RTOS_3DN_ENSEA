@@ -1,7 +1,5 @@
-../shell/shell.c:168:13:uart_read	1
-../shell/shell.c:174:12:uart_write	1
-../shell/shell.c:178:12:sh_help	2
-../shell/shell.c:187:6:shell_init	1
-../shell/shell.c:194:5:shell_add	2
-../shell/shell.c:205:12:shell_exec	6
-../shell/shell.c:229:5:shell_run	5
+../shell/shell.c:16:5:sh_help	2
+../shell/shell.c:26:6:shell_init	1
+../shell/shell.c:38:5:shell_add	2
+../shell/shell.c:51:12:shell_exec	6
+../shell/shell.c:76:5:shell_run	7

@@ -28,6 +28,10 @@
 #include <stdio.h>
 #include "shell.h"
 #include "drv_uart.h"
+#include <string.h>
+#include <stdlib.h>
+#include "FreeRTOS.h"
+#include "task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -206,23 +210,62 @@ void task_bug(void * pvParameters)
 }
 */
 
+extern UART_HandleTypeDef huart1;
 
 
 
+h_shell_t shell;
 
-int fonction(int argc, char **argv) {
-	printf("Une fonction inutile\r\n");
+int fonction(int argc, char ** argv)
+{
+	printf("Je suis une fonction bidon\r\n");
+
+	printf("Nombre d'arguments : %d\r\n", argc);
+
+	    for (int i = 0; i < argc; i++) {
+	        printf("Arg[%d] = %s\r\n", i, argv[i]);
+	    }
+
+
+
 	return 0;
 }
 
+int addition(int argc, char ** argv)
+{
+    if (argc < 3) {
+        printf("Erreur : 2 paramètres requis\r\n");
+        return -1;
+    }
+
+    int a = atoi(argv[1]);
+    int b = atoi(argv[2]);
+    int result = a + b;
+
+    printf("Addition : %d + %d = %d\r\n", a, b, result);
+
+    return 0;
+}
+
+// allumer une led en dure, à améliorer pour choisir la led et le port, éteintre la led
+int cmd_led_on(int argc, char **argv) {
+    HAL_GPIO_WritePin(GPIOI, GPIO_PIN_1, GPIO_PIN_SET);
+    printf("LED PIN1 GPIOI est allumée !\r\n");
+    return 0;
+}
+
 void ShellTask(void *argument) {
-	drv_uart_set_task_handle(xTaskGetCurrentTaskHandle());
-	HAL_UART_Receive_IT(&huart1, (uint8_t *)&uart_rx_char, 1);
+    shell.io.drv_shell_transmit = drv_uart_transmit;
+    shell.io.drv_shell_receive  = drv_uart_receive;
 
-	shell_init();
-	shell_add('f', fonction, "Une fonction inutile");
+    drv_uart_init_IT();  // // Lancement de la première réception en IT
 
-	shell_run();  // Boucle bloquante
+    shell_init(&shell);
+    shell_add(&shell, 'f', fonction, "Une fonction inutile");
+    shell_add(&shell, 'a', addition, "Addition de deux entiers");
+    shell_add(&shell, 'l', cmd_led_on, "Allumer LED (GPIOI_PIN1)");
+
+    shell_run(&shell);  // éxécute une boucle while(1)
 }
 
 /* USER CODE END 0 */
@@ -258,6 +301,8 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+
+
   //printf("Test UART transmission\n");
 
   // Pour les tâches avec le sémaphore
@@ -294,7 +339,7 @@ int main(void)
 
 
 
-  xTaskCreate(ShellTask, "Shell", 512, NULL, tskIDLE_PRIORITY + 1, NULL);
+  	  xTaskCreate(ShellTask, "Shell", 512, NULL, 1, NULL);
 
   	  /* Lancement du scheduler */
   	  vTaskStartScheduler();
