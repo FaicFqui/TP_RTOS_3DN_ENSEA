@@ -167,7 +167,7 @@ Sur Realterm " Pile restante avant recursion : 67 mots (268 octets) "
 Il reste 67 mots = 268 octets de pile disponibles,mais comme chaque appel récursif consomme environ 128 octets, 
 le dépassement de la pile aura lieu au 2ᵉ ou 3ᵉ appel récursif.
 
-/////////*********************** Statistique dans l'IDE ***************************////////
+/////////*********************** Statistique dans "l'IDE" ***************************////////
  COnfiguration dans FreeRTOSConfig.h
  
 #define configGENERATE_RUN_TIME_STATS           1
@@ -177,7 +177,7 @@ le dépassement de la pile aura lieu au 2ᵉ ou 3ᵉ appel récursif.
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() configureTimerForRunTimeStats()
 #define portGET_RUN_TIME_COUNTER_VALUE()        getRunTimeCounterValue()
 
-Ajout d'un compteur dans cette fonction :
+"Ajout d'un compteur dans cette fonction" :
 
 <pre> ```c void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { if (htim->Instance == TIM6) { HAL_IncTick(); // Incrémente le tick système (HAL) tim6_overflow_count++; // Compteur FreeRTOS pour les stats CPU } } ``` </pre>
 
