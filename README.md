@@ -1,6 +1,6 @@
 # TP_RTOS_3DN_ENSEA (FQUIHI Faiçal / HAJJAJI Adnane)
 
-#1ère Partie : tâches et sémaphores
+# 1ère Partie : tâches et sémaphores
 
 - Clignotement led sans FreeRtos et avec FreeRTOS est fonctionnel.
 
@@ -11,7 +11,7 @@
 - Solution sémaphore Mutex proposé pour proteger l'accès à la fonction task_bug.
 
 
-#2èmme Partie : SHELL
+# 2èmme Partie : SHELL
 
 //////////////////// ************ Shell en FREERTOS ********************* //////////
 
@@ -80,7 +80,7 @@ LED PIN1 GPIOI est eteinte !
                                                   
 >       
 
-#3èmme Partie : Debug, gestion d'erreur et statistiques
+# 3èmme Partie : Debug, gestion d'erreur et statistiques
 
 ///////////////////************** Gestion mémoire TAS ET PILE ***************///////////////
 
