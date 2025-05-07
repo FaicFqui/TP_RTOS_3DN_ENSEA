@@ -114,7 +114,7 @@ Cela n’inclut pas la heap ni la pile des tâches allouées dynamiquement.
 
 
 - Taille du tas pour FreeRTOS : 15360 octets
-- Pile d'une tache : 12 words × 4 octets/word = 2048 octets
+- Pile d'une tache : '12 words × 4 octets/word = 2048 octets'
 
 - consommation totale = 15360 - 13120 = 2240 octets
 - Pile = 2048 octets
