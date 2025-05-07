@@ -32,6 +32,8 @@
 #include <stdlib.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include "stm32f7xx_hal_tim.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,10 +67,17 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+volatile uint32_t tim6_overflow_count = 0;
+extern TIM_HandleTypeDef htim6;
+
 int __io_putchar(int ch) {
 	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
 return ch;
 }
+
+
+
+
 
 /*void LedCli(void *argument);
 
@@ -248,11 +257,42 @@ int addition(int argc, char ** argv)
 }
 
 // allumer une led en dure, à améliorer pour choisir la led et le port, éteintre la led
-int cmd_led_on(int argc, char **argv) {
+int allume_led(int argc, char **argv) {
     HAL_GPIO_WritePin(GPIOI, GPIO_PIN_1, GPIO_PIN_SET);
-    printf("LED PIN1 GPIOI est allumée !\r\n");
+    printf("LED PIN1 GPIOI est allumee !\r\n");
     return 0;
 }
+
+int eteint_led(int argc, char **argv) {
+    HAL_GPIO_WritePin(GPIOI, GPIO_PIN_1, GPIO_PIN_RESET);
+    printf("LED PIN1 GPIOI est eteinte !\r\n");
+    return 0;
+}
+
+
+/// fonctions pour statistiques
+void configureTimerForRunTimeStats(void) {
+    HAL_TIM_Base_Start_IT(&htim6);  // Lancer TIM6 avec IT
+    tim6_overflow_count = 0;
+}
+
+unsigned long getRunTimeCounterValue(void) {
+    return (tim6_overflow_count << 16) + __HAL_TIM_GET_COUNTER(&htim6);
+}
+
+
+void TacheStats(void *pvParameters) {
+    char buffer[512];
+
+    for (;;) {
+        vTaskGetRunTimeStats(buffer);
+        printf("=== RunTime Stats ===\n%s\n", buffer);
+        vTaskDelay(pdMS_TO_TICKS(2000)); // Toutes les 2 secondes
+    }
+}
+
+
+
 
 void ShellTask(void *argument) {
     shell.io.drv_shell_transmit = drv_uart_transmit;
@@ -263,10 +303,76 @@ void ShellTask(void *argument) {
     shell_init(&shell);
     shell_add(&shell, 'f', fonction, "Une fonction inutile");
     shell_add(&shell, 'a', addition, "Addition de deux entiers");
-    shell_add(&shell, 'l', cmd_led_on, "Allumer LED (GPIOI_PIN1)");
+    shell_add(&shell, 'l', allume_led, "Allumer LED (GPIOI_PIN1)");
+    shell_add(&shell, 'e', eteint_led, "Eteindre LED (GPIOI_PIN1)");
+    shell_add(&shell, 's', TacheStats, "Statitiques taches/CPU/MEMOIRE");
 
     shell_run(&shell);  // éxécute une boucle while(1)
 }
+
+
+////// ******************* Gestion du Tas ********************///////
+
+/* Tache bidon */
+void tache_bidon(void *pvParameters) {
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+/* Création répétée de tâches pour tester la limite mémoire */
+void cree_plusieurs_taches(void) {
+    BaseType_t result;
+    int i = 1;
+
+    while (1) {
+        char name[16];
+        snprintf(name, sizeof(name), "D%d", i);
+
+        result = xTaskCreate(tache_bidon, name, 512, NULL, 1, NULL);
+        if (result != pdPASS) {
+            printf(" Tache %d : echec de creation (peut etre memoire epuisee)\n", i);
+            Error_Handler();
+            break;
+        } else {
+            printf(" Tache %d creee avec succes | Heap restant : %u octets\n",
+                   i, (unsigned int)xPortGetFreeHeapSize());
+        }
+
+        i++;
+    }
+}
+
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+
+    printf(" Dépassement de pile detecte dans la tache : %s\n", pcTaskName);
+
+
+    taskDISABLE_INTERRUPTS();
+    while (1); //pour debbuger
+}
+
+void TacheOverflow(void *pvParameters) {
+	printf("je rentre");
+	UBaseType_t remaining = uxTaskGetStackHighWaterMark(NULL);
+	printf("Pile restante avant recursion : %lu mots (%lu octets)\n",remaining, remaining * sizeof(StackType_t));
+
+	vTaskDelay(pdMS_TO_TICKS(10));
+	//Fonction récursive sans fin
+    void Recursif(int niveau) {
+        volatile char buffer[128]; // Alloue 128 octets à chaque appel
+        buffer[0] = (char)niveau;  // Utilise la variable
+        Recursif(niveau + 1);      // Appel récursif
+        printf("recursif");
+    }
+
+    Recursif(0);
+
+    vTaskDelete(NULL);
+    printf("fin recursif");
+}
+
 
 /* USER CODE END 0 */
 
@@ -339,17 +445,45 @@ int main(void)
 
 
 
-  	  xTaskCreate(ShellTask, "Shell", 512, NULL, 1, NULL);
 
-  	  /* Lancement du scheduler */
-  	  vTaskStartScheduler();
+
+  xTaskCreate(ShellTask, "Shell", 512, NULL, 1, NULL);
+
+  //xTaskCreate(TacheStats,"TacheStats", 512, NULL, 1, NULL); // est appelable depuis Shell également avec "s"
+
+
+
+  //printf("Hello\n");
+
+  //Création de la tâche avec pile trop petite
+     //xTaskCreate(TacheOverflow, "OVERFLOW", 128, NULL, 1, NULL);
+
+  //printf("tache cree\n");
+
+  //Pour la création plusieurs tache pour generer un dépassement de mémoire
+  //cree_plusieurs_taches();
+
+
+
+	vTaskStartScheduler();
+
+  // Si le scheduler échoue, on arrive ici
+	printf("Erreur : démarrage du scheduler echoue\n");
+
 
 
 
 
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
 
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
@@ -440,6 +574,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM6) {
     HAL_IncTick();
+    tim6_overflow_count++;
   }
   /* USER CODE BEGIN Callback 1 */
 
