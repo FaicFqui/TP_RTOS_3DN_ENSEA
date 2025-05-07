@@ -1,13 +1,17 @@
 # TP_RTOS_3DN_ENSEA (FQUIHI Faiçal / HAJJAJI Adnane)
 
-Clignotement led sans FreeRtos et avec FreeRTOS est fonctionnel
+#1ère Partie : tâches et sémaphores
 
-Source de temps pour FreeRTOS est TIM6
+- Clignotement led sans FreeRtos et avec FreeRTOS est fonctionnel.
 
-Manipulation des sémaphores, notifications, queues est effectuée.
+- Source de temps pour FreeRTOS est TIM6.
 
-Solution sémaphore Mutex proposé pour proteger l'accès à la fonction task_bug
+- Manipulation des sémaphores, notifications, queues est effectuée.
 
+- Solution sémaphore Mutex proposé pour proteger l'accès à la fonction task_bug.
+
+
+#2èmme Partie : SHELL
 
 //////////////////// ************ Shell en FREERTOS ********************* //////////
 
@@ -76,22 +80,25 @@ LED PIN1 GPIOI est eteinte !
                                                   
 >       
 
+#3èmme Partie : Debug, gestion d'erreur et statistiques
 
 ///////////////////************** Gestion mémoire TAS ET PILE ***************///////////////
 
 les commandes arm-none-eabi-size et arm-none-eabi-objdump :
-arm-none-eabi-size  TP_RTOS.elf 
-arm-none-eabi-objdump -h -S TP_RTOS.elf  > "TP_RTOS.list"
+```bash
+arm-none-eabi-size TP_RTOS.elf
+arm-none-eabi-objdump -h -S TP_RTOS.elf > "TP_RTOS.list"
+
    text	   data	    bss	    dec	    hex	filename
   33724	    108	  21028	  54860	   d64c	TP_RTOS.elf
 Finished building: default.size.stdout
 
 Explication :
 
-text : Code exécutable + constantes (.text, .rodata) dans la mémoire_FLASH/ROM	
-data : Variables initialisées (.data) RAM (copiées de flash)	
-bss : Variables non initialisées (.bss) dans la mémoire_RAM	
-Total mémoire en décimale = text + data + bss	= 54860 octets
+- `text` : Code exécutable + constantes (`.text`, `.rodata`) → en **FLASH/ROM**
+- `data` : Variables initialisées (`.data`) → en **RAM**
+- `bss`  : Variables non initialisées (`.bss`) → en **RAM**
+- `dec`  : Total en **décimal** = `text + data + bss` = **54860 octets**
 
 FLASH (ROM) :
 text + data = 33724 + 108 = 33832 octets
@@ -106,15 +113,15 @@ Donc à peu près 21 Ko de RAM statique pour faire fonctionner le code.
 Cela n’inclut pas la heap ni la pile des tâches allouées dynamiquement.
 
 
-taille du tas pour FreeRTOS : 15360 octets
-pile d'une tache : 12 words × 4 octets/word = 2048 octets
+- Taille du tas pour FreeRTOS : 15360 octets
+- Pile d'une tache : 12 words × 4 octets/word = 2048 octets
 
-consommation totale = 15360 - 13120 = 2240 octets
-Pile = 2048 octets
-Donc TCB = 2240 - 2048 = 192 octets
+- consommation totale = 15360 - 13120 = 2240 octets
+- Pile = 2048 octets
+----> Donc TCB = 2240 - 2048 = 192 octets
 
 Nombre totale de taches possible à créer avec 15360 ocets du tas pour FREERTOS :
-15360 Division entière 2240 = 6 taches possibles
+15360 Division entière 2240 = 6 taches possibles.
 
 Résulats sur Realterm :
 
@@ -152,6 +159,7 @@ xTaskCreate(TacheOverflow, "OVERFLOW", 128, NULL, 1, NULL) : 128 mots = 128 *4 =
 Résulat en entrant dans la tâche overflow avec  : 
 
 UBaseType_t remaining = uxTaskGetStackHighWaterMark(NULL);
+
 printf("Pile restante avant recursion : %lu mots (%lu octets)\n",remaining, remaining * sizeof(StackType_t));
 
 Sur Realterm " Pile restante avant recursion : 67 mots (268 octets) "
@@ -171,18 +179,11 @@ le dépassement de la pile aura lieu au 2ᵉ ou 3ᵉ appel récursif.
 
 Ajout d'un compteur dans cette fonction :
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  
-  if (htim->Instance == TIM6) {
-    HAL_IncTick();
-    tim6_overflow_count++;
-  }
-  
-}
+<pre> ```c void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { if (htim->Instance == TIM6) { HAL_IncTick(); // Incrémente le tick système (HAL) tim6_overflow_count++; // Compteur FreeRTOS pour les stats CPU } } ``` </pre>
 
-et définition de deux fonctions :
-void configureTimerForRunTimeStats(void) : Cette fonction est appelée automatiquement par FreeRTOS au démarrage, 
+et définition de deux fonctions :  
+  
+  void configureTimerForRunTimeStats(void) : Cette fonction est appelée automatiquement par FreeRTOS au démarrage, 
 pour que tu puisses initialiser un timer matériel (ou autre base de temps) qui sera utilisé comme source de mesure.
 
 unsigned long getRunTimeCounterValue(void) : 
