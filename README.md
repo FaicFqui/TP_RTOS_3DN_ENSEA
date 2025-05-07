@@ -185,7 +185,7 @@ if (htim->Instance == TIM6 ) {
    tim6_overflow_count++; // Compteur FreeRTOS pour les stats CPU  
     } }
 
-et définition de deux fonctions :  
+"et définition de deux fonctions" :  
   
   void configureTimerForRunTimeStats(void) : Cette fonction est appelée automatiquement par FreeRTOS au démarrage, 
 pour que tu puisses initialiser un timer matériel (ou autre base de temps) qui sera utilisé comme source de mesure.
