@@ -179,7 +179,11 @@ le dépassement de la pile aura lieu au 2ᵉ ou 3ᵉ appel récursif.
 
 "Ajout d'un compteur dans cette fonction" :
 
-<pre> ```c void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) { if (htim->Instance == TIM6) { HAL_IncTick(); // Incrémente le tick système (HAL) tim6_overflow_count++; // Compteur FreeRTOS pour les stats CPU } } ``` </pre>
+c void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {  
+if (htim->Instance == TIM6 ) {   
+  HAL_IncTick(); // Incrémente le tick système (HAL)  
+   tim6_overflow_count++; // Compteur FreeRTOS pour les stats CPU  
+    } }
 
 et définition de deux fonctions :  
   
